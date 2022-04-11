@@ -1,10 +1,10 @@
 # ANECompat
 
-A tool to check compatiblity of CoreML model with Apple Neural Engine (and if it runs end-to-end or only specific segments). Useful during the process of designing/choosing neural network architecture.
+A tool to check compatibility of CoreML model with Apple Neural Engine (and if it runs end-to-end or only specific segments). Useful during the process of designing/choosing neural network architecture.
 
 Note that this tool check compatibility against neural engine of the host and each generation of Apple SoC's have different ANE with varying feature sets and performance. Checkout this [document](https://github.com/hollance/neural-engine/blob/master/docs/supported-devices.md) to see which chips have ANE.
 
-Currenly only compatible with Apple Silicon macs - M1 series is equivalent to A14 Bionic ANE-wise.
+Currently only compatible with Apple Silicon macs - M1 series is equivalent to A14 Bionic ANE-wise.
 
 ## How does it work?
 
@@ -14,7 +14,7 @@ CoreML runtime partitions neural network computation graph based on operations a
 
 ## Usage
 
-Tool currenly only supports models with single multi-array input and single output.
+Tool currently supports models with single multi-array input and single output.
 
 ### Python API
 
