@@ -1,5 +1,4 @@
 import os 
-import shutil
 import ctypes
 import tempfile
 
@@ -15,23 +14,37 @@ libANETest = os.path.abspath(
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "build", "libANECompat.dylib"))
 libANETest = ctypes.CDLL(libANETest)
 
-def test_ane_compatibility_coreml_model(mlmodel_path):
+
+def test_ane_compatibility_coreml_model(mlmodel_or_path):
     """
     Test mlmodel for compatiblity with AppleNeuralEngine
 
     Parameters
     ----------
-    mlmodel_path: str
-        Path to mlmodel/mlpackage or compiled mlmodelc bundle
+    mlmodel_or_path: str | coremltools.models.MLModel
+        Instance of MLModel from coremltools, or path to mlmodel/mlpackage or compiled mlmodelc bundle
     
     Returns
     -------
     status: int
         integer status: 0 - fully compatible, 1 - partially compatible, 2 - not compatible
     """
-    
-    if not isinstance(mlmodel_path, str):
-        raise ValueError("Provided model path must be str")
+    mlmodel_path = None
+    if isinstance(mlmodel_or_path, str):
+        mlmodel_path = mlmodel_or_path
+    else:
+        try:
+            import coremltools as ct
+            if isinstance(mlmodel_or_path, ct.models.model.MLModel):
+                mlmodel_type = mlmodel_or_path.get_spec().WhichOneof("Type")
+                ext = ".mlpackage" if mlmodel_type == "mlProgram" else ".mlmodel"
+                mlmodel_path = tempfile.mkdtemp(suffix=ext)
+                mlmodel_or_path.save(mlmodel_path)
+        except ModuleNotFoundError:
+            pass
+
+    if mlmodel_path is None:
+        raise ValueError("mlmodel_or_path must be str or coremltools.models.MLModel")
 
     test_ane_compatibility_native_func = libANETest.test_ane_compatibility_coreml_model
     test_ane_compatibility_native_func.argtypes = [ctypes.c_char_p, ctypes.c_char_p]

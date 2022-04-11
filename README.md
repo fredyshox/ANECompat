@@ -14,18 +14,20 @@ CoreML runtime partitions neural network computation graph based on operations a
 
 ## Usage
 
+Tool currenly only supports models with single multi-array input and single output.
+
 ### Python API
 
 [anecompat.py](./python/anecompat.py) contains Python bindings which is single function:
 
 ```python
-def test_ane_compatibility_coreml_model(mlmodel_path)
+def test_ane_compatibility_coreml_model(mlmodel_or_path)
 ```
 
 **Parameters**
 
-`mlmodel_path: str` 
-* Path to mlmodel/mlpackage or compiled mlmodelc bundle
+`mlmodel_or_path: str | coremltools.models.MLModel` 
+* Instance of MLModel from coremltools, or path to mlmodel/mlpackage or compiled mlmodelc bundle
 
 **Returns**
 
