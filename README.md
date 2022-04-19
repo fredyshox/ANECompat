@@ -14,7 +14,7 @@ CoreML runtime partitions neural network computation graph based on operations a
 
 ## Usage
 
-Tool currently supports models with single multi-array input and single output.
+Tool currently supports models with single input and output. Supported feature types for input: multi-array, image, int64, float, string.
 
 ### Python API
 

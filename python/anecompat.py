@@ -6,9 +6,10 @@ ANECompatStatus_Passed       = 0
 ANECompatStatus_Partial      = 1
 ANECompatStatus_Failed       = 2
 ANECompatStatus_ReadError    = 3
-ANECompatStatus_InputError   = 4
-ANECompatStatus_PredictError = 5
-ANECompatStatus_OtherError   = 6
+ANECompatStatus_CompileError = 4
+ANECompatStatus_InputError   = 5
+ANECompatStatus_PredictError = 6
+ANECompatStatus_OtherError   = 7
 
 libANETest = os.path.abspath(
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "build", "libANECompat.dylib"))
@@ -57,6 +58,8 @@ def test_ane_compatibility_coreml_model(mlmodel_or_path):
         return res
     elif res == ANECompatStatus_ReadError:
         raise ValueError(f"Unable to read model file at {mlmodel_path}")
+    elif res == ANECompatStatus_CompileError:
+        raise ValueError("Model compilation failure")
     elif res == ANECompatStatus_InputError:
         raise ValueError("Incompatible input of mlmodel. Only multiarray input is supported.")
     elif res == ANECompatStatus_PredictError:

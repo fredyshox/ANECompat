@@ -37,7 +37,7 @@ static char InterceptorKey;
 
 @implementation NSObject (ANEClientInterceptor)
 - (BOOL)doEvaluateModelWithInterceptor:(_ANEModel *)model options:(NSDictionary *)options request:(_ANERequest *)request qos:(dispatch_qos_class_t)qos error:(NSError**)errorPtr {
-    NSLog(@"Intercepted loading model with key: %@", [model key]);
+    NSLog(@"Intercepted evaluation of model with key: %@", [model key]);
     _ANEInterceptor* interceptor = objc_getAssociatedObject([self class], &InterceptorKey);
     NSError* error = nil;
 

@@ -50,24 +50,27 @@ NSString* ANECompatStatusDescription(ANECompatStatus status) {
 - (ANECompatStatus)evaluateModel:(MLModel *)model {
     NSError* error = nil;
 
-    NSString* inputName = [[[[model modelDescription] inputDescriptionsByName] allKeys] firstObject];
-    NSString* outputName = [[[[model modelDescription] outputDescriptionsByName] allKeys] firstObject];
+    NSDictionary<NSString *,MLFeatureDescription *>* inputsByName = [[model modelDescription] inputDescriptionsByName];
+    NSDictionary<NSString *,MLFeatureDescription *>* outputsByName = [[model modelDescription] outputDescriptionsByName];
+    if (inputsByName.count != 1) {
+        NSLog(@"Models with multiple inputs are not supported (%lu inputs)", inputsByName.count);
+        return ANECompatStatus_InputError;
+    }
+    if (outputsByName.count != 1) {
+        NSLog(@"Models with multiple outputs are not supported (%lu outputs)", outputsByName.count);
+        return ANECompatStatus_InputError;
+    }
+    NSString* inputName = [[inputsByName allKeys] firstObject];
+    NSString* outputName = [[outputsByName allKeys] firstObject];
     
-    MLFeatureDescription* inputDescription = [[model modelDescription] inputDescriptionsByName][inputName];
-    MLMultiArrayConstraint* inputConstraint = [inputDescription multiArrayConstraint];
-    if (inputConstraint == nil) {
-        NSLog(@"Something wrong with provided model. Input not multi array.");
+    MLFeatureDescription* inputDescription = inputsByName[inputName];
+    MLFeatureValue* dummyValue = [self dummyFeatureProviderForFeature:inputDescription];
+    if (dummyValue == nil) {
+        NSLog(@"MLFeatureType %ld is not supported", inputDescription.type);
         return ANECompatStatus_InputError;
     }
 
-    NSArray<NSNumber*>* inputShape = [inputConstraint shape];
-    MLMultiArrayDataType inputType = [inputConstraint dataType];
-
-    MLMultiArray* input = [[MLMultiArray alloc] initWithShape:inputShape
-                                                     dataType:inputType
-                                                        error:&error];
-    [self fillMultiArrayWithDummyValues: input];
-    MLDictionaryFeatureProvider* inputProvider = [[MLDictionaryFeatureProvider alloc] initWithDictionary:@{inputName: input}
+    MLDictionaryFeatureProvider* inputProvider = [[MLDictionaryFeatureProvider alloc] initWithDictionary:@{inputName: dummyValue}
                                                                                                    error:&error];
 
     if (error != nil) {
@@ -98,7 +101,42 @@ NSString* ANECompatStatusDescription(ANECompatStatus status) {
     return interceptorReturnValue;
 }
 
-- (void)fillMultiArrayWithDummyValues:(MLMultiArray *) array {
+- (MLFeatureValue*)dummyFeatureProviderForFeature:(MLFeatureDescription*)description {
+    if (description.type == MLFeatureTypeMultiArray) {
+        MLMultiArray* array = [self dummyMultiArrayInputWithConstraint:description.multiArrayConstraint];
+        return [MLFeatureValue featureValueWithMultiArray:array];
+    } else if (description.type == MLFeatureTypeImage) {
+        CVPixelBufferRef buffer = [self dummyImageInpytWithConstraint:description.imageConstraint];
+        return [MLFeatureValue featureValueWithPixelBuffer:buffer];
+    } else if (description.type == MLFeatureTypeInt64) {
+        return [MLFeatureValue featureValueWithInt64:0];
+    } else if (description.type == MLFeatureTypeDouble) {
+        return [MLFeatureValue featureValueWithDouble:0.0];
+    } else if (description.type == MLFeatureTypeString) {
+        return [MLFeatureValue featureValueWithString:@"hello world"];
+    } else {
+        // TODO MLFeatureTypeSequence, MLFeatureTypeDictionary
+        return nil;
+    }
+}
+
+- (MLMultiArray*)dummyMultiArrayInputWithConstraint:(MLMultiArrayConstraint *)constraint {
+    if (constraint == nil) {
+        NSLog(@"Provided MLMultiArrayConstraint is nil. Possible that model does not accept multiarray");
+        return nil;
+    }
+
+    NSError* error = nil;
+    NSArray<NSNumber*>* inputShape = [constraint shape];
+    MLMultiArrayDataType inputType = [constraint dataType];
+    MLMultiArray* array = [[MLMultiArray alloc] initWithShape:inputShape
+                                                    dataType:inputType
+                                                    error:&error];
+    if (error != nil) {
+        NSLog(@"Error while creating dummy multiarray: %@", error);
+        return nil;
+    }
+
     NSUInteger totalElemCount = 1;
     NSUInteger channelCount = [[array.shape lastObject] unsignedIntegerValue]; 
     for (NSNumber* n in array.shape) {
@@ -113,6 +151,23 @@ NSString* ANECompatStatusDescription(ANECompatStatus status) {
             value++;
         }
     }
+
+    return array;
+}
+
+- (CVPixelBufferRef)dummyImageInpytWithConstraint:(MLImageConstraint*)constraint {
+    if (constraint == nil) {
+        NSLog(@"Provided MLImageConstraint is nil. Possible that model does not accept image");
+        return nil;
+    }
+
+    CVPixelBufferRef pixelBuffer;
+    CVPixelBufferCreate(
+        NULL, constraint.pixelsWide, constraint.pixelsHigh, 
+        constraint.pixelFormatType, NULL, &pixelBuffer
+    );
+
+    return pixelBuffer;
 }
 
 @end 
