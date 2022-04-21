@@ -18,6 +18,8 @@ NSString* ANECompatStatusDescription(ANECompatStatus status);
 
 @interface ANECompatEvaluator : NSObject
 
+@property (copy, nullable) NSURL* logDirURL;
+
 - (ANECompatStatus)evaluateModelAtURL:(NSURL *)url;
 - (ANECompatStatus)evaluateModel:(MLModel *)model;
 

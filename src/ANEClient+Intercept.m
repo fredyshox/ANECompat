@@ -8,6 +8,7 @@
 static char InterceptorKey;
 
 @interface _ANEInterceptor: NSObject 
+
 @property (readonly, nonatomic, strong) NSArray<NSString*>* inputNodes;
 @property (readonly, nonatomic, strong) NSArray<NSString*>* outputNodes; 
 @property (readwrite, nonatomic, strong) NSMutableSet<NSString*>* visitedNodes;
@@ -16,6 +17,7 @@ static char InterceptorKey;
 - (instancetype)initWithInputs:(NSArray<NSString*>*)inputs outputs:(NSArray<NSString*>*)outputs;
 - (BOOL)modelStatusFullForwardPass;
 - (BOOL)modelStatusAnyForwardPass;
+
 @end
 
 @implementation _ANEInterceptor

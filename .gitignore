@@ -53,5 +53,7 @@ dkms.conf
 
 # Project specific
 build/
+install/
 *.swp
+*.egg-info
 

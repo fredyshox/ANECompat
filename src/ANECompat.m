@@ -75,7 +75,7 @@ NSString* ANECompatStatusDescription(ANECompatStatus status) {
         return ANECompatStatus_OtherError;
     }
 
-    [_ANEClient swizzleInterceptorWithInputs:allInputs outputs:allOutputs logOutputDirURL:nil];
+    [_ANEClient swizzleInterceptorWithInputs:allInputs outputs:allOutputs logOutputDirURL:_logDirURL];
 
     [model predictionFromFeatures:inputProvider 
                           options:[[MLPredictionOptions alloc] init] 

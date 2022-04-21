@@ -6,5 +6,6 @@ int test_ane_compatibility_coreml_model(char* mlmodelPath, char* logDir) {
     NSURL* logDirURL = (logDir != NULL) ? [NSURL fileURLWithPath: [NSString stringWithUTF8String: logDir]] : nil;
     
     ANECompatEvaluator* evaluator = [[ANECompatEvaluator alloc] init];
+    [evaluator setLogDirURL:logDirURL];
     return [evaluator evaluateModelAtURL:modelURL];
 }

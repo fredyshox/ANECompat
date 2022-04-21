@@ -1,6 +1,23 @@
 import os 
-import ctypes
 import tempfile
+import ctypes
+import ctypes.util
+from glob import glob
+
+
+def _load_ane_compat_dylib():
+    dylib_path = ctypes.util.find_library("ANECompat")
+    if dylib_path is None:
+        repo_root_dir = os.path.dirname(os.path.dirname(__file__))
+        local_paths = glob(os.path.join(repo_root_dir, "**", "libANECompat.dylib"))
+        if len(local_paths) != 0:
+            dylib_path = local_paths[0]
+    
+    if dylib_path is not None:
+        return ctypes.CDLL(dylib_path)
+    else:
+        raise ValueError("Cannot find libANECompat.dylib")
+
 
 ANECompatStatus_Passed       = 0
 ANECompatStatus_Partial      = 1
@@ -11,9 +28,7 @@ ANECompatStatus_InputError   = 5
 ANECompatStatus_PredictError = 6
 ANECompatStatus_OtherError   = 7
 
-libANETest = os.path.abspath(
-    os.path.join(os.path.dirname(os.path.dirname(__file__)), "build", "libANECompat.dylib"))
-libANETest = ctypes.CDLL(libANETest)
+libANECompat = _load_ane_compat_dylib()
 
 
 def test_ane_compatibility_coreml_model(mlmodel_or_path):
@@ -47,7 +62,7 @@ def test_ane_compatibility_coreml_model(mlmodel_or_path):
     if mlmodel_path is None:
         raise ValueError("mlmodel_or_path must be str or coremltools.models.MLModel")
 
-    test_ane_compatibility_native_func = libANETest.test_ane_compatibility_coreml_model
+    test_ane_compatibility_native_func = libANECompat.test_ane_compatibility_coreml_model
     test_ane_compatibility_native_func.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
     test_ane_compatibility_native_func.restype = ctypes.c_int
 
