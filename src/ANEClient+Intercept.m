@@ -8,30 +8,52 @@
 static char InterceptorKey;
 
 @interface _ANEInterceptor: NSObject 
-@property (readonly, nonatomic, strong) NSString* inputName;
-@property (readonly, nonatomic, strong) NSString* outputName; 
+@property (readonly, nonatomic, strong) NSArray<NSString*>* inputNodes;
+@property (readonly, nonatomic, strong) NSArray<NSString*>* outputNodes; 
+@property (readwrite, nonatomic, strong) NSMutableSet<NSString*>* visitedNodes;
+@property (readwrite, nonatomic, strong) NSMutableSet<NSString*>* toBeVisitedNodes;
 @property (nonatomic, strong, nullable) NSURL* logOutputDirURL;
-- (instancetype)initWithInput:(NSString*)input output:(NSString*)output callback:(_ANEInterceptorCallback)callback;
-- (void)notifyWithResult:(BOOL)result;
+- (instancetype)initWithInputs:(NSArray<NSString*>*)inputs outputs:(NSArray<NSString*>*)outputs;
+- (BOOL)modelStatusFullForwardPass;
+- (BOOL)modelStatusAnyForwardPass;
 @end
 
-@implementation _ANEInterceptor {
-    _ANEInterceptorCallback _callback;
-}
+@implementation _ANEInterceptor
 
-- (instancetype)initWithInput:(NSString*)input output:(NSString*)output callback:(_ANEInterceptorCallback)callback {
+- (instancetype)initWithInputs:(NSArray<NSString*>*)inputs outputs:(NSArray<NSString*>*)outputs {
     self = [super init];
     if (self) {
-        _inputName = input;
-        _outputName = output;
-        _callback = callback;
+        _inputNodes = inputs;
+        _outputNodes = outputs;
+        _visitedNodes = [NSMutableSet new];
+        _toBeVisitedNodes = [NSMutableSet new];
+
+        [_toBeVisitedNodes addObjectsFromArray:inputs];
     }
     
     return self;
 }
 
-- (void)notifyWithResult:(BOOL)result {
-    _callback(result);
+- (BOOL)modelStatusFullForwardPass {
+    BOOL toBeVisitedIsEmpty = _toBeVisitedNodes.count == 0;
+    BOOL visitedContainsAllOutputNodes = true;
+    for (NSString* node in _outputNodes) {
+        visitedContainsAllOutputNodes = visitedContainsAllOutputNodes && [_visitedNodes containsObject:node];
+    }
+
+    return toBeVisitedIsEmpty && visitedContainsAllOutputNodes;
+}
+
+- (BOOL)modelStatusAnyForwardPass {
+    BOOL visitedNodesInInitialState = _visitedNodes.count == 0;
+    BOOL toBeVisitedInInitialState = _toBeVisitedNodes.count == _outputNodes.count;
+    if (toBeVisitedInInitialState) {
+        for (NSString* node in _outputNodes) {
+            toBeVisitedInInitialState = toBeVisitedInInitialState && [_toBeVisitedNodes containsObject:node];
+        }
+    }
+
+    return !visitedNodesInInitialState || !toBeVisitedInInitialState;
 }
 @end
 
@@ -53,16 +75,24 @@ static char InterceptorKey;
         NSLog(@"Input surface: %@", IOSurfaceDescription(surface));
     }
 
-    NSData* keyData = [[model key] dataUsingEncoding: NSUTF8StringEncoding];
-    NSDictionary* parsedKey = [NSJSONSerialization JSONObjectWithData: keyData options: 0 error: &error];
+    NSData* keyData = [[model key] dataUsingEncoding:NSUTF8StringEncoding];
+    NSDictionary* parsedKey = [NSJSONSerialization JSONObjectWithData:keyData options:0 error:&error];
     if (error != nil || parsedKey == nil) {
         NSLog(@"Unable to parse model key!");
     } else {
         NSArray<NSString*>* inputKeys = [parsedKey[@"inputs"] allKeys];
         NSArray<NSString*>* outputKeys = [parsedKey[@"outputs"] allKeys];
-        BOOL inputValid = inputKeys.count == 1 && [inputKeys containsObject: interceptor.inputName];
-        BOOL outputValid = outputKeys.count == 1 && [outputKeys containsObject: interceptor.outputName];
-        [interceptor notifyWithResult: inputValid && outputValid];
+        for (NSString* outputNode in outputKeys) {
+            if (![interceptor.outputNodes containsObject:outputNode]) {
+                [interceptor.toBeVisitedNodes addObject:outputNode];
+            }
+            [interceptor.visitedNodes addObject:outputNode];
+        }
+        for (NSString* inputNode in inputKeys) {
+            if ([interceptor.toBeVisitedNodes containsObject:inputNode]) {
+                [interceptor.toBeVisitedNodes removeObject:inputNode];
+            }
+        }
     }
 
     // call yourself, but as implementations are exchanged this is original implementation
@@ -82,7 +112,19 @@ static char InterceptorKey;
     return result;
 }
 
-+ (void)swizzleInterceptorWithInputName:(NSString*)inputName outputName:(NSString*)outputName logOutputDirURL:(NSURL*)logOutputDirURL callback:(_ANEInterceptorCallback)callback {
++ (void)getInterceptedResultsFullForwardPass:(BOOL*)fullForwardPass anyForwardPass:(BOOL*)anyForwardPass {
+    Class class = [self class];
+    _ANEInterceptor* interceptor = objc_getAssociatedObject(class, &InterceptorKey);
+    if (interceptor == nil) {
+        // interceptor removed or never attached
+        return;
+    }
+
+    *fullForwardPass = [interceptor modelStatusFullForwardPass];
+    *anyForwardPass = [interceptor modelStatusAnyForwardPass];
+}
+
++ (void)swizzleInterceptorWithInputs:(NSArray<NSString*>*)inputs outputs:(NSArray<NSString*>*)outputs logOutputDirURL:(NSURL*)logOutputDirURL {
     Class class = [self class];
 
     SEL originalSelector = @selector(doEvaluateDirectWithModel:options:request:qos:error:);
@@ -93,9 +135,7 @@ static char InterceptorKey;
 
     method_exchangeImplementations(originalMethod, swizzledMethod);
 
-    _ANEInterceptor* interceptor = [[_ANEInterceptor alloc] initWithInput: inputName 
-                                                                   output: outputName 
-                                                                 callback: callback];
+    _ANEInterceptor* interceptor = [[_ANEInterceptor alloc] initWithInputs:inputs outputs:outputs];
     interceptor.logOutputDirURL = logOutputDirURL;
     objc_setAssociatedObject(class, &InterceptorKey, interceptor, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }

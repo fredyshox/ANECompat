@@ -4,10 +4,9 @@
 @class _ANEModel;
 @class _ANERequest;
 
-typedef void (^_ANEInterceptorCallback)(BOOL);
-
 @interface NSObject (ANEClientInterceptor)
-+ (void)swizzleInterceptorWithInputName:(NSString*)inputName outputName:(NSString*)outputName logOutputDirURL:(NSURL*)logOutputDirURL callback:(_ANEInterceptorCallback)callback;
++ (void)swizzleInterceptorWithInputs:(NSArray<NSString*>*)inputs outputs:(NSArray<NSString*>*)outputs logOutputDirURL:(NSURL*)logOutputDirURL;
++ (void)getInterceptedResultsFullForwardPass:(BOOL*)fullForwardPass anyForwardPass:(BOOL*)anyForwardPass;
 + (void)removeInterceptorIfNeeded;
 - (BOOL)doEvaluateModelWithInterceptor:(_ANEModel *)model options:(NSDictionary *)options request:(_ANERequest *)request qos:(dispatch_qos_class_t)qos error:(NSError**)errorPtr;
 @end

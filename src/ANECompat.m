@@ -49,47 +49,46 @@ NSString* ANECompatStatusDescription(ANECompatStatus status) {
 
 - (ANECompatStatus)evaluateModel:(MLModel *)model {
     NSError* error = nil;
+    ANECompatStatus interceptorReturnValue = ANECompatStatus_Failed;
 
-    NSDictionary<NSString *,MLFeatureDescription *>* inputsByName = [[model modelDescription] inputDescriptionsByName];
-    NSDictionary<NSString *,MLFeatureDescription *>* outputsByName = [[model modelDescription] outputDescriptionsByName];
-    if (inputsByName.count != 1) {
-        NSLog(@"Models with multiple inputs are not supported (%lu inputs)", inputsByName.count);
-        return ANECompatStatus_InputError;
+    NSDictionary<NSString *, MLFeatureDescription *>* inputsByName = [[model modelDescription] inputDescriptionsByName];
+    NSDictionary<NSString *, MLFeatureDescription *>* outputsByName = [[model modelDescription] outputDescriptionsByName];
+    NSArray<NSString *>* allInputs = [inputsByName allKeys];
+    NSArray<NSString *>* allOutputs = [outputsByName allKeys];
+    NSMutableDictionary<NSString *, MLFeatureValue *>* inputFeatures = [NSMutableDictionary new];
+
+    NSLog(@"Model inputs: %@, outputs: %@", allInputs, allOutputs);
+    for (NSString* inputKey in inputsByName) {
+        MLFeatureDescription* inputDescription = inputsByName[inputKey];
+        MLFeatureValue* dummyValue = [self dummyFeatureProviderForFeature:inputDescription];
+        if (dummyValue == nil) {
+            NSLog(@"MLFeatureType %ld is not supported", inputDescription.type);
+            return ANECompatStatus_InputError;
+        }
+
+        inputFeatures[inputKey] = dummyValue;
     }
-    if (outputsByName.count != 1) {
-        NSLog(@"Models with multiple outputs are not supported (%lu outputs)", outputsByName.count);
-        return ANECompatStatus_InputError;
-    }
-    NSString* inputName = [[inputsByName allKeys] firstObject];
-    NSString* outputName = [[outputsByName allKeys] firstObject];
     
-    MLFeatureDescription* inputDescription = inputsByName[inputName];
-    MLFeatureValue* dummyValue = [self dummyFeatureProviderForFeature:inputDescription];
-    if (dummyValue == nil) {
-        NSLog(@"MLFeatureType %ld is not supported", inputDescription.type);
-        return ANECompatStatus_InputError;
-    }
-
-    MLDictionaryFeatureProvider* inputProvider = [[MLDictionaryFeatureProvider alloc] initWithDictionary:@{inputName: dummyValue}
-                                                                                                   error:&error];
-
+    MLDictionaryFeatureProvider* inputProvider = [[MLDictionaryFeatureProvider alloc] initWithDictionary:inputFeatures error:&error];
     if (error != nil) {
         NSLog(@"Error while initializing dictionary provider: %@", error.localizedDescription);
         return ANECompatStatus_OtherError;
     }
 
-    dispatch_once_t reportResultOnce = 0;
-    __block ANECompatStatus interceptorReturnValue = ANECompatStatus_Failed;
-    [_ANEClient swizzleInterceptorWithInputName:inputName outputName:outputName logOutputDirURL:nil callback:^(BOOL result){
-        dispatch_once(&reportResultOnce, ^{
-            interceptorReturnValue = (result) ? ANECompatStatus_Passed : ANECompatStatus_Partial;
-            NSLog(@"ANEClient callback with status: %d", interceptorReturnValue);
-        });
-    }];
+    [_ANEClient swizzleInterceptorWithInputs:allInputs outputs:allOutputs logOutputDirURL:nil];
 
     [model predictionFromFeatures:inputProvider 
                           options:[[MLPredictionOptions alloc] init] 
                             error:&error];
+
+    BOOL fullPass = false, anyPass = false;
+    [_ANEClient getInterceptedResultsFullForwardPass:&fullPass anyForwardPass:&anyPass];
+    if (fullPass) {
+        interceptorReturnValue = ANECompatStatus_Passed;
+    } else if (anyPass) {
+        interceptorReturnValue = ANECompatStatus_Partial;
+    }
+
     [_ANEClient removeInterceptorIfNeeded];
     if (error != nil) {
         NSLog(@"Error while running prediction: %@", error.localizedDescription);

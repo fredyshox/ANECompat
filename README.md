@@ -14,7 +14,7 @@ CoreML runtime partitions neural network computation graph based on operations a
 
 ## Usage
 
-Tool currently supports models with single input and output. Supported feature types for input: multi-array, image, int64, float, string.
+Tool supports models with multiple inputs or outputs. Supported feature types for input: multi-array, image, int64, float, string.
 
 ### Python API
 
@@ -45,6 +45,19 @@ anecompat MODELPATH [LOGDIR]
 `MODELPATH` path to `mlmodel`/`mlpackage` or compiled `mlmodelc` file
 
 `LOGDIR` optional path to directory where additional logs and file dumps will be stored
+
+Example output:
+```
+$ anecompat path/to/superresolution.mlpackage
+
+Model inputs: (
+    "input_1"
+), outputs: (
+    Identity
+)
+Intercepted evaluation of model with key: {"isegment":0,"inputs":{"input_1":{"shape":[12,1280,1,720,1]}},"outputs":{"Identity":{"shape":[3,1280,1,720,1]}}}
+Completed with status: Fully compatible (0)
+```
 
 ## Build
 
