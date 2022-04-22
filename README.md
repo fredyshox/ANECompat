@@ -12,6 +12,20 @@ Currently only compatible with Apple Silicon macs - M1 series is equivalent to A
 
 CoreML runtime partitions neural network computation graph based on operations and complexity with focus on performance. Segments of a model with operations which are not supported by the neural engine will be assigned to be run on other compute unit. Switching between compute units can be expensive, that's why tuning a model to be fully ane-friendly is one of ways to maximize performance.  
 
+## Install
+
+Program can be installed via [Homebrew](https://brew.sh/):
+```sh
+brew tap fredyshox/tools
+brew install anecompat
+```
+
+Optional python bindings can be installed by downloading repository sources and running [setup.py](./setup.py) script:
+```sh
+# if anecompat was installed via homebrew, use python3 distribution from there too
+python3 setup.py install 
+```
+
 ## Usage
 
 Tool supports models with multiple inputs or outputs. Supported feature types for input: multi-array, image, int64, float, string.
@@ -75,3 +89,9 @@ make
 ```
 
 `build/` directory will be created with artifacts: `anecompat` executable and `libANECompat.dylib` shared library.
+
+To install compiled artifacts execute:
+
+```
+make install 
+```

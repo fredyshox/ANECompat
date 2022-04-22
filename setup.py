@@ -15,9 +15,9 @@ setup(
     license="MIT",
     py_modules=["anecompat"],
     package_dir={"": "python"},
-    classifiers=(
+    classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: MacOS",
-    )
+    ]
 )

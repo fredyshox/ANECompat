@@ -6,12 +6,16 @@ from glob import glob
 
 
 def _load_ane_compat_dylib():
-    dylib_path = ctypes.util.find_library("ANECompat")
-    if dylib_path is None:
+    def _alternative_dylib_lookup():
+        # search local directories first
         repo_root_dir = os.path.dirname(os.path.dirname(__file__))
         local_paths = glob(os.path.join(repo_root_dir, "**", "libANECompat.dylib"))
         if len(local_paths) != 0:
-            dylib_path = local_paths[0]
+            return local_paths[0]
+        
+        return None
+
+    dylib_path = ctypes.util.find_library("ANECompat") or _alternative_dylib_lookup()
     
     if dylib_path is not None:
         return ctypes.CDLL(dylib_path)
