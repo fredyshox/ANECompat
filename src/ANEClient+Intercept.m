@@ -1,9 +1,13 @@
 #import "ANEClient+Intercept.h"
-#import <IOSurface/IOSurface.h>
 #import <objc/runtime.h>
+#if TARGET_OS_IOS
+#import <IOSurface/IOSurfaceRef.h>
+#else
+#import <IOSurface/IOSurface.h>
+#import "IOSurface+Description.h"
+#endif
 
 #import "AppleNeuralEngine/AppleNeuralEngine.h"
-#import "IOSurface+Description.h"
 
 static char InterceptorKey;
 
@@ -65,6 +69,7 @@ static char InterceptorKey;
     _ANEInterceptor* interceptor = objc_getAssociatedObject([self class], &InterceptorKey);
     NSError* error = nil;
 
+#if !TARGET_OS_IOS
     if (interceptor.logOutputDirURL != nil && [[request inputArray] count] != 0) {
         NSURL* inputLogFileURL = [interceptor.logOutputDirURL URLByAppendingPathComponent:@"input_0"];
 
@@ -76,6 +81,7 @@ static char InterceptorKey;
 
         NSLog(@"Input surface: %@", IOSurfaceDescription(surface));
     }
+#endif
 
     NSData* keyData = [[model key] dataUsingEncoding:NSUTF8StringEncoding];
     NSDictionary* parsedKey = [NSJSONSerialization JSONObjectWithData:keyData options:0 error:&error];
@@ -99,6 +105,7 @@ static char InterceptorKey;
 
     // call yourself, but as implementations are exchanged this is original implementation
     BOOL result = [self doEvaluateModelWithInterceptor: model options: options request: request qos: qos error: errorPtr];
+#if !TARGET_OS_IOS
     if (interceptor.logOutputDirURL != nil && [[request outputArray] count] != 0) {
         NSURL* outputLogFileURL = [interceptor.logOutputDirURL URLByAppendingPathComponent:@"output_0"];
 
@@ -110,6 +117,7 @@ static char InterceptorKey;
 
         NSLog(@"Output surface: %@", IOSurfaceDescription(surface));
     }
+#endif
 
     return result;
 }

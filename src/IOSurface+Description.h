@@ -1,5 +1,9 @@
 #import <Foundation/Foundation.h>
+#if TARGET_OS_IOS
+#import <IOSurface/IOSurfaceRef.h>
+#else
 #import <IOSurface/IOSurface.h>
+#endif
 
 NSString* IOSurfaceDescription(IOSurfaceRef surf) {
     uint32_t identifier = IOSurfaceGetID(surf);

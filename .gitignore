@@ -56,4 +56,7 @@ build/
 install/
 *.swp
 *.egg-info
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
 
