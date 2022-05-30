@@ -9,7 +9,6 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ModelPicker: UIViewControllerRepresentable {
-
     private let onURL: (URL) -> Void
     private let onDismiss: () -> Void
 

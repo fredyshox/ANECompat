@@ -1,6 +1,6 @@
 //
 //  ANECompatApp.swift
-//  ANECompatApp
+//  ANECompat4iOS
 //
 //  Created by Kacper Rączy on 26/04/2022.
 //

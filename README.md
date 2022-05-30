@@ -4,7 +4,7 @@ A tool to check compatibility of CoreML model with Apple Neural Engine (and if i
 
 Note that this tool check compatibility against neural engine of the host and each generation of Apple SoC's have different ANE with varying feature sets and performance. Checkout this [document](https://github.com/hollance/neural-engine/blob/master/docs/supported-devices.md) to see which chips have ANE.
 
-Currently only compatible with Apple Silicon macs - M1 series is equivalent to A14 Bionic ANE-wise.
+Command-line tool is compatible with Apple Silicon macs. iOS app is also available - see [iOS Version](#ios-version).
 
 ## How does it work?
 
@@ -155,3 +155,11 @@ To install compiled artifacts execute:
 ```
 make install 
 ```
+
+## iOS Version
+
+iOS port of this tool is also available in [ios/](./ios) subdirectory. Simple app can open mlmodel/mlpackage bundles and perform evaluation against ANE of host device. It shows model compatibility status and same textual output as command-line equivalent.
+
+![iOS app](images/ios-app.png)
+
+App can only be run on `arm64e` devices (iPhone XS/XR and newer). Latest IPA for sideloading is available in [Github Release](https://github.com/fredyshox/ANECompat/releases/latest).
