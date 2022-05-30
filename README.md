@@ -162,4 +162,4 @@ iOS port of this tool is also available in [ios/](./ios) subdirectory. Simple ap
 
 ![iOS app](images/ios-app.png)
 
-App can only be run on `arm64e` devices (iPhone XS/XR and newer). Latest IPA for sideloading is available in [Github Release](https://github.com/fredyshox/ANECompat/releases/latest).
+App can only be run on `arm64e` devices (iPhone XS/XR and newer).
